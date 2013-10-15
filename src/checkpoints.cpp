@@ -35,23 +35,21 @@ namespace Checkpoints
     // + Contains no strange transactions
     static MapCheckpoints mapCheckpoints =
         boost::assign::map_list_of
-	// before block 14640, the retarget period in I0coin was 1 week
+	// before block 14640, the retarget period in Groupcoin was 1 week
 	// the function ComputeMinWork uses the current retarget period
 	// of 3 hours, this is no problem UNLESS someone adds a checkpoint before
 	// block 14640, should be no problem....
-	(  36180, uint256("0x0000000000635e5e1a8027383f028f4c666f9e20f4f90968ba8bf7ba8431c71f"))
-	( 127360, uint256("0x000000000330be69aa359cb69896554c0dfcd9d76b5415d526708ed737bfe0b6"))
-	( 131130, uint256("0x0000000000853272e70ba9aafe9f685c186a7ba3aa57d2ddba7c44c6a25efe09"))
-	( 136800, uint256("0x0000000000c8c592fce349ed8cf7eba3113f3c243c9e1cbe27fb6166cc4ffa00"))
-	( 142900, uint256("0x00000000005eb49db6f29a6aae382b7a8e9a109aba42e536e6d74b95aba4dffd"))
-	( 155000, uint256("0x0000000000041a6bc4cd419ed90a6bb1dbf8df8a587d162504dba9ae84a4418c"))
-	( 161000, uint256("0x601581f84984f86f5c4d080b2e32bd1c4da4061730fd9bc6b4ce08c65b30c4bd"))
-	( 367000, uint256("0xb619876887c0baac0aca8cef5eea23869bce693b8629fb6b62d8b529cd216586"))
-	( 837000, uint256("0x421c7a8246ed2759191beff61c46897c0787779cfd174ba53b01f6e5b5ab6ff1"))
-    ( 850000, uint256("0x23a601419f21ef1a261bf2a4b0fc6582b8907f33d0c0e23e9c3ff9d169752c94"))
+    (      1, uint256("0x00000000c58f75e0fcc7c0658f55d1bced6db68848a29c5c6b0ecc7d4af2b2e3"))
+    (     75, uint256("0x00000000646651ee10fc2677ae7f1cfa3b3968cb71006b747e3493ae894840b2"))
+    (   2500, uint256("0x0000000004eb4798d63ae39b832097db0a147b2ec9c31c4f808b3cab52b5af4b"))
+    (   5660, uint256("0x0000000005651aae932395823f3565493b99f22b054c9c9d5554e97aef04daf0"))
+    (   9500, uint256("0x0000000009aa713836ab0c4968c757a5d0782ad849ecb44ef4ce9b0c2ad1f481"))
+    (  15065, uint256("0x0000000002baec718b9fe043f9db21a1179cd882dd4c88865cc901cf5cead366"))
+    (  20373, uint256("0x8119633acd4860c02c5c1743dd3ec6560725e0a5f7a46bef1be14661ebf0ea2a"))
+    (  42770, uint256("0xd841c161ed860510445bd83f5785744e5bbb7b1a01489e4888a31eab0bee0eba"))
 	;
 
-    /* i0coin had not testnet checkblocks, if they even start to exist, they can be added here */
+    /* groupcoin had not testnet checkblocks, if they even start to exist, they can be added here */
     static MapCheckpoints mapCheckpointsTestnet; // = 
         //boost::assign::map_list_of
 	// ( insert testnet checkpoints here, just like above )

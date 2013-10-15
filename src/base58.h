@@ -249,7 +249,7 @@ public:
     bool operator> (const CBase58Data& b58) const { return CompareTo(b58) >  0; }
 };
 
-/** base58-encoded I0coin addresses.
+/** base58-encoded Groupcoin addresses.
  * Public-key-hash-addresses have version 105 (or 112 testnet).
  * The data vector contains RIPEMD160(SHA256(pubkey)), where pubkey is the serialized public key.
  * Script-hash-addresses have version 5 (or 196 testnet). // what to do, should we use this numbers unchanged? 
@@ -272,10 +272,10 @@ class CBitcoinAddress : public CBase58Data
 public:
     enum
     {
-        PUBKEY_ADDRESS = 105,
-        SCRIPT_ADDRESS = 5, // use this for I0C?
-        PUBKEY_ADDRESS_TEST = 112,
-        SCRIPT_ADDRESS_TEST = 196, // use this for I0C?
+        PUBKEY_ADDRESS = 245,
+        SCRIPT_ADDRESS = 5, // use this for GRP?
+        PUBKEY_ADDRESS_TEST = 244,
+        SCRIPT_ADDRESS_TEST = 196, // use this for GRP?
     };
 
     bool Set(const CKeyID &id) {

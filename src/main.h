@@ -47,7 +47,7 @@ static const unsigned int UNDOFILE_CHUNK_SIZE = 0x100000; // 1 MiB
 /** Fake height value used in CCoins to signify they are only in the memory pool (since 0.8) */
 static const unsigned int MEMPOOL_HEIGHT = 0x7FFFFFFF;
 /** No amount larger than this (in satoshi) is valid */
-static const int64 MAX_MONEY = 21000000 * COIN;
+static const int64 MAX_MONEY = 42000000000 * COIN;
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 /** Coinbase transaction outputs can only be spent after this number of new blocks (network rule) */
 static const int COINBASE_MATURITY = 100;
@@ -1548,7 +1548,7 @@ public:
     // Add this block to the block index, and if necessary, switch the active block chain to this
     bool AddToBlockIndex(CValidationState &state, const CDiskBlockPos &pos);
 
-    // Context-independent validity checks, however in I0coin
+    // Context-independent validity checks, however in Groupcoin
     //  nHeight is needed to see if merged mining is allowed.
     //  Merged mining is introduced in block 160000.
     bool CheckBlock(CValidationState &state, int nHeight, bool fCheckPOW=true, bool fCheckMerkleRoot=true) const;

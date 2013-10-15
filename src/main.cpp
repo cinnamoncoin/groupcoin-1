@@ -32,7 +32,7 @@ CTxMemPool mempool;
 unsigned int nTransactionsUpdated = 0;
 
 map<uint256, CBlockIndex*> mapBlockIndex;
-uint256 hashGenesisBlock("0x00000000de13b7f748fb214e3f9c284fe6a57e1559fee545bfe473f72599c0d1");
+uint256 hashGenesisBlock("0x00000000afed1142e9ce8c78ee1a9adf56540c68d6c0e0b9ebcb2f8b6872e7f9");
 static CBigNum bnProofOfWorkLimit(~uint256(0) >> 32);
 CBlockIndex* pindexGenesisBlock = NULL;
 int nBestHeight = -1;
@@ -65,7 +65,7 @@ map<uint256, set<uint256> > mapOrphanTransactionsByPrev;
 // Constant stuff for coinbase transactions we create:
 CScript COINBASE_FLAGS;
 
-const string strMessageMagic = "I0coin Signed Message:\n";
+const string strMessageMagic = "Groupcoin Signed Message:\n";
 
 double dHashesPerSec = 0.0;
 int64 nHPSTimerStart = 0;
@@ -1073,17 +1073,17 @@ uint256 static GetOrphanRoot(const CBlockHeader* pblock)
 
 int64 static GetBlockValue(int nHeight, int64 nFees)
 {
-    int64 nSubsidy = 48 * COIN;
+    int64 nSubsidy = 50 * COIN;
 
     // Subsidy is cut in half every 218750 blocks, which will occur approximately every 4 years
-    nSubsidy >>= (nHeight / 218750);
+    //nSubsidy >>= (nHeight / 218750);
 
     return nSubsidy + nFees;
 }
 
-static const int64 nTargetTimespan = 3 * 60 * 60; // 3 hours
-static const int64 nTargetSpacing = 90;    //1.5 minute blocks
-static const int64 nInterval = nTargetTimespan / nTargetSpacing;  //120 block retarget
+int64 nTargetTimespan = 24 * 60 * 60; // 1 day
+static const int64 nTargetSpacing = 10 * 60;
+static const int64 nInterval = nTargetTimespan / nTargetSpacing;
 
 //
 // minimum amount of work that could possibly be required nTime after
@@ -1107,38 +1107,42 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
     return bnResult.GetCompact();
 }
 
-// Return the target (difficulty) to the new block based on the pindexLast block
-unsigned int static GetNextWorkRequired_OLD(const CBlockIndex* pindexLast)
+unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock)
 {
-    /* these values shadow the global ones with the same name
-     * this function is only used for blocks before 14640... */
-    const int64 nTargetTimespan = 7 * 24 * 60 * 60; // one week
-    const int64 nTargetSpacing = 5 * 60;
-    const int64 nInterval = nTargetTimespan / nTargetSpacing;
+    unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
 
     // Genesis block
     if (pindexLast == NULL)
-        return bnProofOfWorkLimit.GetCompact();
+        return nProofOfWorkLimit;
 
-	int64 nRemaining = (pindexLast->nHeight+1) % nInterval;
+    if (pindexLast->nHeight < 9500)
+        nTargetTimespan *= 14; // two weeks
+    int64 nInterval = nTargetTimespan / nTargetSpacing;
 
     // Only change once per interval
-    if ( nRemaining != 0)
-	{
-/*
-		const CBlockIndex* pindexFirst = pindexLast;
-		for (int i = 0; pindexFirst && i < nRemaining-1; i++)
-			pindexFirst = pindexFirst->pprev;
-		assert(pindexFirst);
+    if ((pindexLast->nHeight+1) % nInterval != 0)
+    {
+        // Special difficulty rule for testnet:
+        if (fTestNet)
+        {
+            // If the new block's timestamp is more than 2* 10 minutes
+            // then allow mining of a min-difficulty block.
+            if (pblock->nTime > pindexLast->nTime + nTargetSpacing*2)
+                return nProofOfWorkLimit;
+            else
+            {
+                // Return the last non-special-min-difficulty-rules-block
+                const CBlockIndex* pindex = pindexLast;
+                while (pindex->pprev && pindex->nHeight % nInterval != 0 && pindex->nBits == nProofOfWorkLimit)
+                    pindex = pindex->pprev;
+                return pindex->nBits;
+            }
+        }
 
-		int64 rema = GetAdjustedTime() - pindexFirst->GetBlockTime();
-		
-		if(rema < nTargetTimespan)
-*/
-			return pindexLast->nBits;
-	}
+        return pindexLast->nBits;
+    }
 
-    // Go back by what we want to be 7 days worth of blocks
+    // Go back by what we want to be 14 days worth of blocks
     const CBlockIndex* pindexFirst = pindexLast;
     for (int i = 0; pindexFirst && i < nInterval-1; i++)
         pindexFirst = pindexFirst->pprev;
@@ -1161,132 +1165,7 @@ unsigned int static GetNextWorkRequired_OLD(const CBlockIndex* pindexLast)
     if (bnNew > bnProofOfWorkLimit)
         bnNew = bnProofOfWorkLimit;
 
- 
     /// debug print
-    printf("GetNextWorkRequired RETARGET\n");
-    printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
-  printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
-    printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
-
-    return bnNew.GetCompact();
-}
-
-//blatantly stolen from SolidCoin
-unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock)
-{
-
-    unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
-
-    // Genesis block
-    if (pindexLast == NULL)
-        return nProofOfWorkLimit;
-
-    const int height = pindexLast->nHeight + 1;
-
-//okay, maybe not this line
-    if (height < 14640)
-       return GetNextWorkRequired_OLD(pindexLast);
-   //hardcoded switch to 256.0 difficulty at block 14639
-   if (height == 14640)
-       return 0x1C00FFFF;
-
-    // Only change once per interval
-    if ((pindexLast->nHeight+1) % nInterval != 0)
-    {
-        // Special difficulty rule for testnet:
-        if (fTestNet)
-        {
-            // If the new block's timestamp is more than 2* 10 minutes
-            // then allow mining of a min-difficulty block.
-            if (pblock->nTime > pindexLast->nTime + nTargetSpacing*2)
-                return nProofOfWorkLimit;
-            else
-            {
-                // Return the last non-special-min-difficulty-rules-block
-                const CBlockIndex* pindex = pindexLast;
-                while (pindex->pprev && pindex->nHeight % nInterval != 0 && pindex->nBits == nProofOfWorkLimit)
-                    pindex = pindex->pprev;
-                return pindex->nBits;
-            }
-        }
-
-       return pindexLast->nBits;
-   }
-
-
-    // This fixes an issue where a 51% attack can change difficulty at will.
-    // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
-    // Patch modified from Litecoin.
-    int blockstogoback = nInterval-1;
-    if (height >= 150000 && height != nInterval)
-        blockstogoback = nInterval;
-
-    // Go back by what we want to be 14 days worth of blocks
-    const CBlockIndex* pindexFirst = pindexLast;
-    for (int i = 0; pindexFirst && i < blockstogoback; i++)
-       pindexFirst = pindexFirst->pprev;
-    assert(pindexFirst);
-
-    // Limit adjustment step
-    int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-    //printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
-
-    // assymmetric retarget (slow difficulty rise / fast difficulty drop) can be
-    // abused to make a 51% attack more profitable than it should be,
-    // therefore we adopt (starting at block 895000) a symmetric algorithm based
-    // on bitcoin's algorithm.
-    //
-    // we retarget at most by a factor of 4^(120/2016) = 1.086
-
-    if (height < 895000) {  // use the old retarget algorithm
-    	int64 nTwoPercent = nTargetTimespan/50;
-    	if (nActualTimespan < nTargetTimespan)  //is time taken for a block less than 3minutes?
-    	{
-            //limit increase to a much lower amount than dictates to get past the pump-n-dump mining phase
-            //due to retargets being done more often it also needs to be lowered significantly from the 4x increase
-            if(nActualTimespan<(nTwoPercent*16)) //less than a minute?
-               nActualTimespan=(nTwoPercent*45); //pretend it was only 10% faster than desired
-            else if(nActualTimespan<(nTwoPercent*32)) //less than 2 minutes?
-                nActualTimespan=(nTwoPercent*47); //pretend it was only 6% faster than desired
-            else
-                nActualTimespan=(nTwoPercent*49); //pretend it was only 2% faster than desired
-
-            //int64 nTime=nTargetTimespan-nActualTimespan;
-            //nActualTimespan = nTargetTimespan/2;
-        }
-        else if (nActualTimespan > nTargetTimespan*4)   nActualTimespan = nTargetTimespan*4;
-    } else { // new algorithm
-        // use integer aritmmetic to make sure that
-        // all architectures return the exact same answers,
-        // so instead of:
-        //
-        //  foo < bar/1.086     we do   foo < (1000*bar)/1086
-        //  foo = bar/1.086     we do   foo = (1000*bar)/1086 
-        //  foo > bar*1.086     we do   foo > (1086*bar)/1000
-        //  foo = bar*1.086     we do   foo = (1086*bar)/1000 
-        //
-        // (parentheses to stress desired operator precedence)
-        //
-        // risk of overflow? no way; bar is quite small and
-        // we have it under control, it is defined as 3*60*60
-
-        if (nActualTimespan < (1000*nTargetTimespan)/1086)
-            nActualTimespan = (1000*nTargetTimespan)/1086;
-        else if (nActualTimespan > (1086*nTargetTimespan)/1000)
-            nActualTimespan = (1086*nTargetTimespan)/1000;
-    }
-
-    // Retarget
-    CBigNum bnNew;
-   bnNew.SetCompact(pindexLast->nBits);
-    bnNew *= nActualTimespan;
-    bnNew /= nTargetTimespan;
-
-
-    if (bnNew > bnProofOfWorkLimit)
-        bnNew = bnProofOfWorkLimit;
-
-   /// debug print
     printf("GetNextWorkRequired RETARGET\n");
     printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
     printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
@@ -1747,7 +1626,7 @@ bool CBlock::ConnectBlock(CValidationState &state, CBlockIndex* pindex, CCoinsVi
     //
     // This rule applies to all Bitcoin blocks whose timestamp is after March 15, 2012, 0:00 UTC.
     //
-    // BIP30 for I0coin will go into effect on 2013-09-01 0:00 UTC 
+    // BIP30 for Groupcoin will go into effect on 2013-09-01 0:00 UTC 
     // date -d "2013-09-01 0:00 UTC" +"%s"
     int64 nBIP30SwitchTime = 1377993600;
     bool fEnforceBIP30 = (pindex->nTime > nBIP30SwitchTime);
@@ -1769,7 +1648,7 @@ bool CBlock::ConnectBlock(CValidationState &state, CBlockIndex* pindex, CCoinsVi
         }
     }
 
-    // BIP16 will be enabled for I0coin on 2013-09-01 0:00 UTC
+    // BIP16 will be enabled for Groupcoin on 2013-09-01 0:00 UTC
     // date -d "2013-09-01 0:00 UTC" +"%s"
     int64 nBIP16SwitchTime = 1377993600;
     bool fStrictPayToScriptHash = (pindex->nTime >= nBIP16SwitchTime);
@@ -2122,12 +2001,12 @@ int GetAuxPowStartBlock()
     if (fTestNet)
         return 0; // Always on testnet
     else
-        return 160000; // Never on prodnet
+        return 15100; // Never on prodnet
 }
 
 int GetOurChainID()
 {
-    return 0x0002;
+    return 0x0005;
 }
  
 bool CBlockHeader::CheckProofOfWork(int nHeight) const
@@ -2378,7 +2257,7 @@ bool CBlock::AcceptBlock(CValidationState &state, CDiskBlockPos *dbp)
         if (!Checkpoints::CheckBlock(nHeight, hash))
             return state.DoS(100, error("AcceptBlock() : rejected by checkpoint lock-in at %d", nHeight));
 
-	// I0coin currently doesn't enforce 2 blocks, since merged mining
+	// Groupcoin currently doesn't enforce 2 blocks, since merged mining
 	// produces v1 blocks and normal mining should produce v2 blocks.
 #if 0
         // Reject block.nVersion=1 blocks when 95% (75% on testnet) of the network has upgraded:
@@ -2919,11 +2798,11 @@ bool LoadBlockIndex()
     if (fTestNet)
     {
         bnProofOfWorkLimit = CBigNum(~uint256(0) >> 28); // introduce POWlimit from Bitcoin, good?
-        pchMessageStart[0] = 0x0b;
-        pchMessageStart[1] = 0x11;
-        pchMessageStart[2] = 0x09;
-        pchMessageStart[3] = 0x07;
-        hashGenesisBlock = uint256("000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943");
+        pchMessageStart[0] = 'g';
+        pchMessageStart[1] = 'r';
+        pchMessageStart[2] = 'p';
+        pchMessageStart[3] = '-';
+        hashGenesisBlock = uint256("0x00000003021d7adb34661a872038cc573a1faf4b6bdd6c5c82caeead586dae8f");
     }
 
     //
@@ -2956,27 +2835,28 @@ bool InitBlockIndex() {
 	//  vMerkleTree: 764fc5f8e5
 
         // Genesis block
-        const char* pszTimestamp = "15/Ago/2011 - Diario El Dia - Obama cae al 39% en la aprobaci\xf3n ciudadana";
+        const char* pszTimestamp = "New York Times 1/Jul/11 page 1, U.S. Will Widen 2 C.I.A. Inquiries Into Jail Deaths";
 
         CTransaction txNew;
         txNew.vin.resize(1);
         txNew.vout.resize(1);
         txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-        txNew.vout[0].nValue = 48 * COIN;
+        txNew.vout[0].nValue = 50 * COIN;
         txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
         CBlock block;
         block.vtx.push_back(txNew);
         block.hashPrevBlock = 0;
         block.hashMerkleRoot = block.BuildMerkleTree();
         block.nVersion = 1;
-        block.nTime    = 1313457620;  
+        block.nTime    = 1309654033;
         block.nBits    = 0x1d00ffff;
-        block.nNonce   = 2831549010;
+        block.nNonce   = 4004307127;
 
         if (fTestNet)
         {
-            block.nTime    = 1313519902;
-            block.nNonce   = 350784103;
+            block.nTime    = 1309654033;
+            block.nBits    = 0x1d07fff8;
+            block.nNonce   = 200863596;
         }
 
         //// debug print
@@ -2984,7 +2864,7 @@ bool InitBlockIndex() {
         printf("%s\n", hash.ToString().c_str());
         printf("%s\n", hashGenesisBlock.ToString().c_str());
         printf("%s\n", block.hashMerkleRoot.ToString().c_str());
-        assert(block.hashMerkleRoot == uint256("0x764fc5f8e5c2ef66fd00f815348d965b80a852800379e20e9336ecaa68864034"));
+        assert(block.hashMerkleRoot == uint256("0x20c0e8b25a781040a8edb4e106eb68bbc6bdcfbba63e0c83abb8a73e083722d2"));
         block.print();
         assert(hash == hashGenesisBlock);
 
@@ -3257,7 +3137,7 @@ bool static AlreadyHave(const CInv& inv)
 // The message start string is designed to be unlikely to occur in normal data.
 // The characters are rarely used upper ASCII, not valid as UTF-8, and produce
 // a large 4-byte int at any alignment.
-unsigned char pchMessageStart[4] = { 0xf1, 0xb2, 0xb3, 0xd4 };
+unsigned char pchMessageStart[4] = { 'G', 'R', 'P', ':' };
 
 
 void static ProcessGetData(CNode* pfrom)
@@ -4701,7 +4581,7 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
             return error("AUX POW parent hash %s is not under target %s", auxpow->GetParentBlockHash().GetHex().c_str(), hashTarget.GetHex().c_str());
 
         //// debug print
-        printf("I0coinMiner:\n");
+        printf("GroupcoinMiner:\n");
         printf("AUX proof-of-work found  \n     our hash: %s   \n  parent hash: %s  \n       target: %s\n",
                 hash.GetHex().c_str(),
                 auxpow->GetParentBlockHash().GetHex().c_str(),
@@ -4713,7 +4593,7 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
             return false;
 
         //// debug print
-        printf("I0coinMiner:\n");
+        printf("GroupcoinMiner:\n");
         printf("proof-of-work found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
     }
  
@@ -4725,7 +4605,7 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
     {
         LOCK(cs_main);
         if (pblock->hashPrevBlock != hashBestChain)
-            return error("I0coinMiner : generated block is stale");
+            return error("GroupcoinMiner : generated block is stale");
 
         // Remove key from key pool
         reservekey.KeepKey();
@@ -4747,7 +4627,7 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
 
 void static BitcoinMiner(CWallet *pwallet)
 {
-    printf("I0coinMiner started\n");
+    printf("GroupcoinMiner started\n");
     SetThreadPriority(THREAD_PRIORITY_LOWEST);
     RenameThread("bitcoin-miner");
 
@@ -4771,7 +4651,7 @@ void static BitcoinMiner(CWallet *pwallet)
         CBlock *pblock = &pblocktemplate->block;
         IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
 
-        printf("Running I0coinMiner with %"PRIszu" transactions in block (%u bytes)\n", pblock->vtx.size(),
+        printf("Running GroupcoinMiner with %"PRIszu" transactions in block (%u bytes)\n", pblock->vtx.size(),
                ::GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION));
 
         //
