@@ -1081,7 +1081,7 @@ int64 static GetBlockValue(int nHeight, int64 nFees)
     return nSubsidy + nFees;
 }
 
-int64 nTargetTimespan = 24 * 60 * 60; // 1 day
+int64 nTargetTimespan = 14 * 24 * 60 * 60; // 2 weeks until block 9500
 static const int64 nTargetSpacing = 10 * 60;
 static const int64 nInterval = nTargetTimespan / nTargetSpacing;
 
@@ -1115,8 +1115,8 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
     if (pindexLast == NULL)
         return nProofOfWorkLimit;
 
-    if (pindexLast->nHeight < 9500)
-        nTargetTimespan *= 14; // two weeks
+    if (pindexLast->nHeight >= 9500)
+        nTargetTimespan = 24 * 60 * 60; // 1 day after block 9500
     int64 nInterval = nTargetTimespan / nTargetSpacing;
 
     // Only change once per interval

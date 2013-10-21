@@ -27,7 +27,7 @@
 using namespace std;
 using namespace boost;
 
-static const int MAX_OUTBOUND_CONNECTIONS = 8;
+static const int MAX_OUTBOUND_CONNECTIONS = 16;
 
 bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false);
 
@@ -1193,9 +1193,6 @@ void MapPort(bool)
 static const char *strMainNetDNSSeed[][2] = {
 //    {"xf2.org", "bitseed.xf2.org"}, // Example if DNSSeed from bitcoin
 //    {"snel.it", "i0seed.snel.it"},
-//    {"www.beertokens.info", "www.beertokens.info"},
-//    {"sworm.no-ip.com", "sworm.no-ip.com"},
-//    {"crossciv.no-ip.org", "crossciv.no-ip.org"},
     {NULL, NULL}
 };
 
@@ -1247,12 +1244,12 @@ void ThreadDNSAddressSeed()
 
 
 
-// IP address encoded in unsigned int, port is default port (7333)
+// IP address encoded in unsigned int, port is default port (51333)
 unsigned int pnSeed[] =
 {
-    //0x3D3C9AC6, // 198.154.60.61
-    //0xD3F81155, // 85.17.248.211
     0x3BD8A5BC, // 188.165.216.59
+    0xB73C9AC6, // 198.154.60.183
+    0x13048B25, // 37.139.4.19
 };
 
 void DumpAddresses()

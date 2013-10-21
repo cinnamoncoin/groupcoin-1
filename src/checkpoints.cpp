@@ -47,6 +47,7 @@ namespace Checkpoints
     (  15065, uint256("0x0000000002baec718b9fe043f9db21a1179cd882dd4c88865cc901cf5cead366"))
     (  20373, uint256("0x8119633acd4860c02c5c1743dd3ec6560725e0a5f7a46bef1be14661ebf0ea2a"))
     (  42770, uint256("0xd841c161ed860510445bd83f5785744e5bbb7b1a01489e4888a31eab0bee0eba"))
+    ( 100000, uint256("0xf48e0b258d03a9b9f9b3390a7d0872628b4fe690a4b92a9af0534e2155dd01d7"))
 	;
 
     /* groupcoin had not testnet checkblocks, if they even start to exist, they can be added here */
